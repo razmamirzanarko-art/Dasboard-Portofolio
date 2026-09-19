@@ -2,15 +2,77 @@ from datetime import datetime
 import pandas as pd
 import streamlit as st
 
-# 1. Konfigurasi Halaman Dashboard
+# 1. Konfigurasi Halaman & Tema Elegan ala Perusahaan Asing
 st.set_page_config(
-    page_title="Dashboard Performa Penagihan - Amartha",
-    page_icon="📊",
+    page_title="Amartha Executive Billing Dashboard",
+    page_icon="💼",
     layout="wide",
 )
 
-# 2. Load Data (Sesuaikan nama file excel Anda jika berbeda)
-EXCEL_FILE = "Ops Report Penagihan 2026-09-19 (6).csv"  # Ganti dengan nama file terbaru Anda jika formatnya .xlsx atau .csv
+# Styling CSS Tambahan untuk Tampilan Clean, Modern, & Elegan
+st.markdown(
+    """
+    <style>
+    /* Mengubah background utama menjadi off-white/sangat bersih */
+    .stApp {
+        background-color: #F8FAFC;
+        color: #1E293B;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    
+    /* Styling Header Utama */
+    h1 {
+        color: #0F172A;
+        font-weight: 700;
+        font-size: 2rem;
+        letter-spacing: -0.025em;
+    }
+    
+    h3 {
+        color: #334155;
+        font-weight: 600;
+    }
+
+    /* Kotak Kartu Metrik Profesional */
+    div[data-testid="stMetric"] {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    }
+    div[data-testid="stMetric"] label {
+        color: #64748B !important;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+        color: #0F172A !important;
+        font-weight: 700;
+        font-size: 1.75rem;
+    }
+
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #FFFFFF;
+        border-right: 1px solid #E2E8F0;
+    }
+    
+    /* Tabel Styling */
+    div[data-testid="stDataFrame"] {
+        background-color: #FFFFFF;
+        border-radius: 12px;
+        border: 1px solid #E2E8F0;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        padding: 8px;
+    }
+    </style>
+""",
+    unsafe_allow_html=True,
+)
+
+# 2. Load Data (Sesuaikan nama file Excel/CSV Anda)
+EXCEL_FILE = "Ops Report Penagihan 2026-09-19 (6).csv"
 
 
 @st.cache_data
@@ -45,26 +107,45 @@ if df is not None:
         df["Latest Payment Date"], errors="coerce"
     )
 
-  # --- SIDEBAR FILTER CABANG ---
-  st.sidebar.header("🔍 Filter Wilayah")
-  branch_col = "Branch" if "Branch" in df.columns else df.columns[3]
+  # --- CARI KOLOM CABANG YANG SESUAI ---
+  # Biasanya kolom cabang bernama 'Branch', 'branchid', atau kolom ke-4
+  branch_candidates = [
+      col
+      for col in df.columns
+      if "branch" in col.lower() or "cabang" in col.lower()
+  ]
+  if branch_candidates:
+    branch_col = branch_candidates[0]
+  else:
+    branch_col = df.columns[3] if len(df.columns) > 3 else df.columns[0]
 
+  # --- SIDEBAR FILTER WILAYAH ---
+  st.sidebar.markdown(
+      "<h3 style='color: #0F172A; font-size: 1.1rem;'>⚙️ Filter Kontrol</h3>",
+      unsafe_allow_html=True,
+  )
   branch_list = ["Semua Cabang"] + sorted(
       df[branch_col].dropna().astype(str).unique().tolist()
   )
-  selected_branch = st.sidebar.selectbox("Pilih Cabang", branch_list)
+  selected_branch = st.sidebar.selectbox(
+      f"Pilih Cabang ({branch_col})", branch_list
+  )
 
   if selected_branch != "Semua Cabang":
     df_filtered = df[df[branch_col].astype(str) == selected_branch].copy()
-    title_text = f"Performa: Cabang {selected_branch}"
+    title_text = f"Executive Performance: Cabang {selected_branch}"
   else:
     df_filtered = df.copy()
-    title_text = "Performa: Keseluruhan Cabang"
+    title_text = "Executive Performance: Keseluruhan Cabang"
 
   # --- HEADER UTAMA ---
   st.title(title_text)
-  st.markdown("### Minggu ini, 13 - 19 September 2026")
-  st.markdown("---")
+  st.markdown(
+      "<p style='color: #64748B; font-size: 1rem; margin-top: -10px;'>Periode"
+      " Laporan: Minggu ini, 13 - 19 September 2026</p>",
+      unsafe_allow_html=True,
+  )
+  st.markdown("<hr style='border: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
 
 
   # --- FUNGSI KATEGORISASI STATUS & PEMBAYARAN ---
@@ -103,7 +184,7 @@ if df is not None:
   df_filtered["Kat_Status"] = [r[0] for r in res]
   df_filtered["Sudah_Bayar"] = [r[1] for r in res]
 
-  # --- KARTU METRIK ATAS (4 KOTAK UTAMA SESUAI GAMBAR) ---
+  # --- 4 KARTU METRIK UTAMA ---
   tot_lancar_card = len(df_filtered[df_filtered["Kat_Status"] == "DPD 0"])
   tot_dpd1_card = len(df_filtered[df_filtered["Kat_Status"] == "DPD 1-30"])
   tot_dpd31_card = len(df_filtered[df_filtered["Kat_Status"] == "DPD 31-90"])
@@ -111,26 +192,30 @@ if df is not None:
 
   col1, col2, col3, col4 = st.columns(4)
   with col1:
-    st.metric(label="Lancar (Total Pinjaman Aktif)", value=tot_lancar_card)
+    st.metric(label="Lancar (Aktif)", value=tot_lancar_card)
   with col2:
-    st.metric(label="DPD 1-30 (Total Pinjaman Aktif)", value=tot_dpd1_card)
+    st.metric(label="DPD 1-30 (Aktif)", value=tot_dpd1_card)
   with col3:
-    st.metric(label="DPD 31-90 (Total Pinjaman Aktif)", value=tot_dpd31_card)
+    st.metric(label="DPD 31-90 (Aktif)", value=tot_dpd31_card)
   with col4:
-    st.metric(label="DPD 90+ (Total Pinjaman Aktif)", value=tot_dpd90_card)
+    st.metric(label="DPD 90+ (Aktif)", value=tot_dpd90_card)
 
-  st.markdown("---")
-  st.subheader("Performa Business Partner (BP)")
+  st.markdown("<br>", unsafe_allow_html=True)
+  st.subheader("Business Partner (BP) Performance Breakdown")
 
-  # --- TABEL PERFORMA BUSINESS PARTNER (BP) LENGKAP ---
-  if "BP" in df_filtered.columns:
+  # --- TABEL PERFORMA BUSINESS PARTNER (BP) ---
+  bp_candidates = [
+      col for col in df_filtered.columns if "bp" in col.lower() or "nama" in col.lower()
+  ]
+  bp_col = bp_candidates[0] if bp_candidates else df_filtered.columns[0]
+
+  if bp_col in df_filtered.columns:
     bp_data = []
-    for bp, group in df_filtered.groupby("BP"):
-      # Total Pinjaman
+    for bp, group in df_filtered.groupby(bp_col):
       tot_aktif = len(group)
       tot_terbayar = int(group["Sudah_Bayar"].sum())
 
-      # DPD 0 (Lancar)
+      # DPD 0
       d0_grp = group[group["Kat_Status"] == "DPD 0"]
       d0_aktif = len(d0_grp)
       d0_terbayar = int(d0_grp["Sudah_Bayar"].sum())
@@ -159,7 +244,7 @@ if df is not None:
       )
 
       bp_data.append({
-          "Nama": bp,
+          "Business Partner": bp,
           "Total Aktif": tot_aktif,
           "Total Terbayar": tot_terbayar,
           "DPD 0 Aktif": d0_aktif,
@@ -179,6 +264,6 @@ if df is not None:
     summary_table = pd.DataFrame(bp_data)
     st.dataframe(summary_table, use_container_width=True, hide_index=True)
   else:
-    st.warning("Kolom 'BP' tidak ditemukan di dalam data.")
+    st.warning("Kolom Business Partner tidak ditemukan dalam data.")
 else:
-  st.warning("Silakan periksa kembali nama file Excel / CSV Anda di variabel EXCEL_FILE.")
+  st.warning("Silakan pastikan file data Anda sudah di-upload dengan benar.")
