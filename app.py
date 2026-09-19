@@ -4,7 +4,7 @@ import streamlit as st
 
 # 1. Konfigurasi Halaman & Tema Elegan ala Perusahaan Asing
 st.set_page_config(
-    page_title="Amartha Executive Billing Dashboard",
+    page_title="Amartha Area Banjar Dashboard",
     page_icon="💼",
     layout="wide",
 )
@@ -63,7 +63,7 @@ st.markdown(
 
 # 2. Load Data Excel (.xlsx) Terbaru Anda
 EXCEL_FILE = (
-    "Ops Report Penagihan 2026-09-19 (6).xlsx"  # Sesuaikan jika nama file beda
+    "Workbook1.xlsx"  # Sesuaikan jika nama file beda
 )
 
 
