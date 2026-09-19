@@ -7,42 +7,37 @@ st.set_page_config(
     page_title="Amartha FO Monitoring", page_icon="📊", layout="wide"
 )
 
-# Styling CSS agar Mirip Persis Sistem Asli Amartha
+# Styling CSS Clean & Modern
 st.markdown(
     """
     <style>
     .stApp {
-        background-color: #F4F6F9;
-        color: #333333;
+        background-color: #F8FAFC;
+        color: #1E293B;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-    h1, h2, h3 {
-        color: #2C3E50;
-    }
-    /* Kotak Metrik ala Amartha */
     div[data-testid="stMetric"] {
         background-color: #FFFFFF;
-        border: 1px solid #D1D8DD;
-        padding: 15px 20px;
-        border-radius: 6px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        border: 1px solid #E2E8F0;
+        padding: 16px 20px;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
     div[data-testid="stMetric"] label {
-        color: #7F8C8D !important;
+        color: #64748B !important;
         font-weight: 600;
         font-size: 0.8rem;
         text-transform: uppercase;
     }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
-        color: #2C3E50 !important;
+        color: #0F172A !important;
         font-weight: 700;
-        font-size: 1.8rem;
+        font-size: 1.75rem;
     }
-    /* Tabel Styling */
     div[data-testid="stDataFrame"] {
         background-color: #FFFFFF;
-        border-radius: 6px;
-        border: 1px solid #D1D8DD;
+        border-radius: 8px;
+        border: 1px solid #E2E8F0;
         padding: 4px;
     }
     </style>
@@ -66,10 +61,27 @@ def load_data(file_path):
 df = load_data(EXCEL_FILE)
 
 if df is not None:
-  if "Latest Payment Date" in df.columns:
+  # Deteksi Tanggal Otomatis dari Kolom Pembayaran
+  date_col = None
+  for col in df.columns:
+    if "date" in str(col).lower() or "tanggal" in str(col).lower():
+      date_col = col
+      break
+
+  if date_col:
     df["Latest Payment Date Parsed"] = pd.to_datetime(
-        df["Latest Payment Date"], errors="coerce"
+        df[date_col], errors="coerce"
     )
+    min_date = df["Latest Payment Date Parsed"].min()
+    max_date = df["Latest Payment Date Parsed"].max()
+    if pd.notna(min_date) and pd.notna(max_date):
+      formatted_date = (
+          f"{min_date.strftime('%d %B %Y')} - {max_date.strftime('%d %B %Y')}"
+      )
+    else:
+      formatted_date = "13 - 19 September 2026"
+  else:
+    formatted_date = "13 - 19 September 2026"
 
   # Deteksi Kolom Cabang
   branch_col = None
@@ -89,35 +101,40 @@ if df is not None:
 
   if selected_branch != "Semua Cabang":
     df_filtered = df[df[branch_col].astype(str) == selected_branch].copy()
-    title_text = f"Performa: {selected_branch}"
+    title_text = f"Performa: Cabang {selected_branch}"
   else:
     df_filtered = df.copy()
     title_text = "Performa: Keseluruhan Cabang"
 
   # --- HEADER UTAMA ---
   st.markdown(
-      f"<p style='color: #7F8C8D; font-size: 0.85rem; margin-bottom:"
+      "<p style='color: #64748B; font-size: 0.85rem; margin-bottom:"
       " -10px;'>Home / Branches / FO Monitoring / Pembayaran</p>",
       unsafe_allow_html=True,
   )
   st.title(title_text)
   st.markdown(
-      "<p style='color: #333333; font-weight: 600; font-size: 0.95rem;'>Minggu"
-      " ini, 13 - 19 September 2026</p>",
+      f"<p style='color: #334155; font-weight: 600; font-size:"
+      f" 0.95rem;'>Periode: {formatted_date}</p>",
       unsafe_allow_html=True,
   )
-  st.markdown("<hr style='border: 1px solid #D1D8DD;'>", unsafe_allow_html=True)
+  st.markdown("<hr style='border: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
 
 
   # --- KATEGORISASI STATUS ---
   def classify_row(row):
-    s = str(row["Payment Status"]).upper()
-    dt = (
-        row["Latest Payment Date Parsed"]
-        if "Latest Payment Date Parsed" in row and not pd.isna(row["Latest Payment Date Parsed"])
-        else None
+    # Cari kolom status pembayaran secara dinamis
+    status_col = next(
+        (c for c in df.columns if "status" in str(c).lower()), df.columns[1]
     )
-    is_bayar = dt is not None and dt.month == 9 and (14 <= dt.day <= 19)
+    s = str(row[status_col]).upper()
+
+    is_bayar = False
+    if "Latest Payment Date Parsed" in row and not pd.isna(
+        row["Latest Payment Date Parsed"]
+    ):
+      dt = row["Latest Payment Date Parsed"]
+      is_bayar = dt.month == 9 and (14 <= dt.day <= 19)  # Sesuaikan logika bayar
 
     if "LANCAR" in s or "DPD 0" in s:
       return "DPD 0", is_bayar
@@ -145,7 +162,7 @@ if df is not None:
   df_filtered["Kat_Status"] = [r[0] for r in res]
   df_filtered["Sudah_Bayar"] = [r[1] for r in res]
 
-  # --- 3 KARTU UTAMA (Lancar, DPD 1-30, DPD 31-90) ---
+  # --- 3 KARTU UTAMA ---
   tot_lancar = len(df_filtered[df_filtered["Kat_Status"] == "DPD 0"])
   tot_dpd1 = len(df_filtered[df_filtered["Kat_Status"] == "DPD 1-30"])
   tot_dpd31 = len(df_filtered[df_filtered["Kat_Status"] == "DPD 31-90"])
@@ -161,7 +178,7 @@ if df is not None:
   st.markdown("<br>", unsafe_allow_html=True)
   st.subheader("Performa Business Partner (BP)")
 
-  # --- TABEL PERFORMA BP (Format Kolom Persis Sistem Amartha) ---
+  # --- TABEL PERFORMA BP ---
   bp_candidates = [
       col for col in df_filtered.columns if "bp" in col.lower() or "nama" in col.lower()
   ]
@@ -170,23 +187,19 @@ if df is not None:
   if bp_col in df_filtered.columns:
     bp_data = []
     for bp, group in df_filtered.groupby(bp_col):
-      # Total Pinjaman
       tot_aktif = len(group)
       tot_terbayar = int(group["Sudah_Bayar"].sum())
 
-      # DPD 0
       d0_grp = group[group["Kat_Status"] == "DPD 0"]
       d0_aktif = len(d0_grp)
       d0_terbayar = int(d0_grp["Sudah_Bayar"].sum())
       d0_rate = round((d0_terbayar / d0_aktif * 100), 1) if d0_aktif > 0 else 0.0
 
-      # DPD 1-30
       d1_grp = group[group["Kat_Status"] == "DPD 1-30"]
       d1_aktif = len(d1_grp)
       d1_terbayar = int(d1_grp["Sudah_Bayar"].sum())
       d1_rate = round((d1_terbayar / d1_aktif * 100), 1) if d1_aktif > 0 else 0.0
 
-      # DPD 31-90
       d31_grp = group[group["Kat_Status"] == "DPD 31-90"]
       d31_aktif = len(d31_grp)
       d31_terbayar = int(d31_grp["Sudah_Bayar"].sum())
