@@ -9,31 +9,25 @@ st.set_page_config(
     layout="wide",
 )
 
-# Styling CSS Tambahan untuk Tampilan Clean, Modern, & Elegan
+# Styling CSS Tema Korporat Profesional (Clean, Modern, & Elegan)
 st.markdown(
     """
     <style>
-    /* Mengubah background utama menjadi off-white/sangat bersih */
     .stApp {
         background-color: #F8FAFC;
         color: #1E293B;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
-    
-    /* Styling Header Utama */
     h1 {
         color: #0F172A;
         font-weight: 700;
         font-size: 2rem;
         letter-spacing: -0.025em;
     }
-    
     h3 {
         color: #334155;
         font-weight: 600;
     }
-
-    /* Kotak Kartu Metrik Profesional */
     div[data-testid="stMetric"] {
         background-color: #FFFFFF;
         border: 1px solid #E2E8F0;
@@ -51,14 +45,10 @@ st.markdown(
         font-weight: 700;
         font-size: 1.75rem;
     }
-
-    /* Sidebar Styling */
     section[data-testid="stSidebar"] {
         background-color: #FFFFFF;
         border-right: 1px solid #E2E8F0;
     }
-    
-    /* Tabel Styling */
     div[data-testid="stDataFrame"] {
         background-color: #FFFFFF;
         border-radius: 12px;
@@ -71,30 +61,21 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 2. Load Data (Sesuaikan nama file Excel/CSV Anda)
-EXCEL_FILE = "Ops Report Penagihan 2026-09-19 (6).csv"
+# 2. Load Data Excel (.xlsx) Terbaru Anda
+EXCEL_FILE = (
+    "Ops Report Penagihan 2026-09-19 (6).xlsx"  # Sesuaikan jika nama file beda
+)
 
 
 @st.cache_data
 def load_data(file_path):
   try:
-    import csv
-    import io
-    import openpyxl
-
     if file_path.endswith(".xlsx"):
-      wb = openpyxl.load_workbook(file_path)
-      sheet = wb.active
-      all_data = []
-      for row in sheet.iter_rows(values_only=True):
-        if row[0] is not None:
-          r_parsed = next(csv.reader(io.StringIO(str(row[0]))))
-          all_data.append(r_parsed)
-      return pd.DataFrame(all_data[1:], columns=all_data[0])
+      return pd.read_excel(file_path)
     else:
       return pd.read_csv(file_path)
   except Exception as e:
-    st.error(f"Gagal memuat file: {e}")
+    st.error(f"Gagal memuat file Excel: {e}")
     return None
 
 
@@ -107,16 +88,28 @@ if df is not None:
         df["Latest Payment Date"], errors="coerce"
     )
 
-  # --- CARI KOLOM CABANG YANG SESUAI ---
-  # Biasanya kolom cabang bernama 'Branch', 'branchid', atau kolom ke-4
-  branch_candidates = [
-      col
-      for col in df.columns
-      if "branch" in col.lower() or "cabang" in col.lower()
-  ]
-  if branch_candidates:
-    branch_col = branch_candidates[0]
-  else:
+  # --- MENCARI KOLOM NAMA CABANG / WILAYAH TEKS ---
+  # Mencari kolom yang mengandung kata 'branch' atau 'cabang' yang bertipe teks
+  branch_col = None
+  for col in df.columns:
+    col_lower = str(col).lower()
+    if (
+        ("branch" in col_lower or "cabang" in col_lower)
+        and "id" not in col_lower
+        and df[col].dtype == "object"
+    ):
+      branch_col = col
+      break
+
+  # Jika tidak ketemu kolom teks khusus nama cabang, cari yang ada kata branch/cabang secara umum
+  if not branch_col:
+    for col in df.columns:
+      if "branch" in str(col).lower() or "cabang" in str(col).lower():
+        branch_col = col
+        break
+
+  # Fallback terakhir jika tetap tidak ketemu
+  if not branch_col:
     branch_col = df.columns[3] if len(df.columns) > 3 else df.columns[0]
 
   # --- SIDEBAR FILTER WILAYAH ---
@@ -127,9 +120,7 @@ if df is not None:
   branch_list = ["Semua Cabang"] + sorted(
       df[branch_col].dropna().astype(str).unique().tolist()
   )
-  selected_branch = st.sidebar.selectbox(
-      f"Pilih Cabang ({branch_col})", branch_list
-  )
+  selected_branch = st.sidebar.selectbox("Pilih Nama Cabang", branch_list)
 
   if selected_branch != "Semua Cabang":
     df_filtered = df[df[branch_col].astype(str) == selected_branch].copy()
@@ -266,4 +257,7 @@ if df is not None:
   else:
     st.warning("Kolom Business Partner tidak ditemukan dalam data.")
 else:
-  st.warning("Silakan pastikan file data Anda sudah di-upload dengan benar.")
+  st.warning(
+      "Silakan pastikan file Excel .xlsx terbaru Anda sudah di-upload dan"
+      " namanya sesuai dengan variabel EXCEL_FILE."
+  )
