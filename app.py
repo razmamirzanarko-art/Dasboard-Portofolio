@@ -2,94 +2,62 @@ from datetime import datetime
 import pandas as pd
 import streamlit as st
 
-# 1. Konfigurasi Halaman & Layout Luas
+# Konfigurasi Halaman
 st.set_page_config(
-    page_title="Amartha Area Banjar Dashboard",
-    page_icon="💼",
-    layout="wide",
+    page_title="Amartha FO Monitoring", page_icon="📊", layout="wide"
 )
 
-# 2. Styling CSS Tingkat Lanjut (Estetika Korporat Global / Premium)
+# Styling CSS agar Mirip Persis Sistem Asli Amartha
 st.markdown(
     """
     <style>
-    /* Background utama bersih ala korporat modern */
     .stApp {
-        background-color: #F8FAFC;
-        color: #0F172A;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background-color: #F4F6F9;
+        color: #333333;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-    
-    /* Header Utama */
-    h1 {
-        color: #0F172A;
-        font-weight: 800;
-        font-size: 1.85rem;
-        letter-spacing: -0.03em;
+    h1, h2, h3 {
+        color: #2C3E50;
     }
-    
-    h3 {
-        color: #334155;
-        font-weight: 700;
-        font-size: 1.2rem;
-    }
-
-    /* Styling Kartu Metrik Premium (Kotak Putih dengan Border Halus & Efek Bayangan) */
+    /* Kotak Metrik ala Amartha */
     div[data-testid="stMetric"] {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        padding: 20px;
-        border-radius: 14px;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
-        transition: all 0.3s ease;
-    }
-    div[data-testid="stMetric"]:hover {
-        border-color: #CBD5E1;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08);
+        background-color: #FFFFFF;
+        border: 1px solid #D1D8DD;
+        padding: 15px 20px;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     div[data-testid="stMetric"] label {
-        color: #64748B !important;
+        color: #7F8C8D !important;
         font-weight: 600;
         font-size: 0.8rem;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
     }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
-        color: #0F172A !important;
-        font-weight: 800;
-        font-size: 1.9rem;
+        color: #2C3E50 !important;
+        font-weight: 700;
+        font-size: 1.8rem;
     }
-
-    /* Sidebar Kontrol */
-    section[data-testid="stSidebar"] {
-        background-color: #FFFFFF;
-        border-right: 1px solid #E2E8F0;
-    }
-    
-    /* Styling Tabel Eksekutif */
+    /* Tabel Styling */
     div[data-testid="stDataFrame"] {
         background-color: #FFFFFF;
-        border-radius: 14px;
-        border: 1px solid #E2E8F0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
-        padding: 12px;
+        border-radius: 6px;
+        border: 1px solid #D1D8DD;
+        padding: 4px;
     }
     </style>
 """,
     unsafe_allow_html=True,
 )
 
-# 3. Load Data Excel / CSV
-EXCEL_FILE = "Workbook1.xlsx"  # Sesuaikan dengan nama file Anda di GitHub
+# Load Data Excel
+EXCEL_FILE = "Workbook1.xlsx"
 
 
 @st.cache_data
 def load_data(file_path):
   try:
-    if file_path.endswith(".xlsx"):
-      return pd.read_excel(file_path)
-    else:
-      return pd.read_csv(file_path)
+    return pd.read_excel(file_path)
   except Exception as e:
     st.error(f"Gagal memuat file: {e}")
     return None
@@ -113,31 +81,32 @@ if df is not None:
     branch_col = df.columns[3] if len(df.columns) > 3 else df.columns[0]
 
   # --- SIDEBAR FILTER ---
-  st.sidebar.markdown(
-      "<h3 style='color: #0F172A; font-size: 1.1rem;'>📊 Navigasi"
-      " & Filter</h3>",
-      unsafe_allow_html=True,
-  )
+  st.sidebar.markdown("### ⚙️ Filter Cabang")
   branch_list = ["Semua Cabang"] + sorted(
       df[branch_col].dropna().astype(str).unique().tolist()
   )
-  selected_branch = st.sidebar.selectbox("Pilih Wilayah / Cabang", branch_list)
+  selected_branch = st.sidebar.selectbox("Pilih Cabang", branch_list)
 
   if selected_branch != "Semua Cabang":
     df_filtered = df[df[branch_col].astype(str) == selected_branch].copy()
-    title_text = f"Executive Performance: Cabang {selected_branch}"
+    title_text = f"Performa: {selected_branch}"
   else:
     df_filtered = df.copy()
-    title_text = "Realtime Performance: Keseluruhan Cabang"
+    title_text = "Performa: Keseluruhan Cabang"
 
   # --- HEADER UTAMA ---
-  st.title(title_text)
   st.markdown(
-      "<p style='color: #64748B; font-size: 0.95rem; margin-top:"
-      " -8px;'>Periode Laporan: Minggu ini, 13 - 19 September 2026</p>",
+      f"<p style='color: #7F8C8D; font-size: 0.85rem; margin-bottom:"
+      " -10px;'>Home / Branches / FO Monitoring / Pembayaran</p>",
       unsafe_allow_html=True,
   )
-  st.markdown("<hr style='border: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
+  st.title(title_text)
+  st.markdown(
+      "<p style='color: #333333; font-weight: 600; font-size: 0.95rem;'>Minggu"
+      " ini, 13 - 19 September 2026</p>",
+      unsafe_allow_html=True,
+  )
+  st.markdown("<hr style='border: 1px solid #D1D8DD;'>", unsafe_allow_html=True)
 
 
   # --- KATEGORISASI STATUS ---
@@ -176,26 +145,23 @@ if df is not None:
   df_filtered["Kat_Status"] = [r[0] for r in res]
   df_filtered["Sudah_Bayar"] = [r[1] for r in res]
 
-  # --- 4 KARTU METRIK UTAMA (Dibuat Seimbang) ---
-  tot_lancar_card = len(df_filtered[df_filtered["Kat_Status"] == "DPD 0"])
-  tot_dpd1_card = len(df_filtered[df_filtered["Kat_Status"] == "DPD 1-30"])
-  tot_dpd31_card = len(df_filtered[df_filtered["Kat_Status"] == "DPD 31-90"])
-  tot_dpd90_card = len(df_filtered[df_filtered["Kat_Status"] == "DPD 90+"])
+  # --- 3 KARTU UTAMA (Lancar, DPD 1-30, DPD 31-90) ---
+  tot_lancar = len(df_filtered[df_filtered["Kat_Status"] == "DPD 0"])
+  tot_dpd1 = len(df_filtered[df_filtered["Kat_Status"] == "DPD 1-30"])
+  tot_dpd31 = len(df_filtered[df_filtered["Kat_Status"] == "DPD 31-90"])
 
-  col1, col2, col3, col4 = st.columns(4)
-  with col1:
-    st.metric(label="Lancar (Aktif)", value=tot_lancar_card)
-  with col2:
-    st.metric(label="DPD 1-30 (Aktif)", value=tot_dpd1_card)
-  with col3:
-    st.metric(label="DPD 31-90 (Aktif)", value=tot_dpd31_card)
-  with col4:
-    st.metric(label="DPD 90+ (Aktif)", value=tot_dpd90_card)
+  c1, c2, c3 = st.columns(3)
+  with c1:
+    st.metric(label="Lancar", value=tot_lancar, delta="Total pinjaman aktif")
+  with c2:
+    st.metric(label="DPD 1-30", value=tot_dpd1, delta="Total pinjaman aktif")
+  with c3:
+    st.metric(label="DPD 31-90", value=tot_dpd31, delta="Total pinjaman aktif")
 
   st.markdown("<br>", unsafe_allow_html=True)
-  st.subheader("Business Partner (BP) Performance Breakdown")
+  st.subheader("Performa Business Partner (BP)")
 
-  # --- TABEL DETAIL BP ---
+  # --- TABEL PERFORMA BP (Format Kolom Persis Sistem Amartha) ---
   bp_candidates = [
       col for col in df_filtered.columns if "bp" in col.lower() or "nama" in col.lower()
   ]
@@ -204,19 +170,23 @@ if df is not None:
   if bp_col in df_filtered.columns:
     bp_data = []
     for bp, group in df_filtered.groupby(bp_col):
+      # Total Pinjaman
       tot_aktif = len(group)
       tot_terbayar = int(group["Sudah_Bayar"].sum())
 
+      # DPD 0
       d0_grp = group[group["Kat_Status"] == "DPD 0"]
       d0_aktif = len(d0_grp)
       d0_terbayar = int(d0_grp["Sudah_Bayar"].sum())
       d0_rate = round((d0_terbayar / d0_aktif * 100), 1) if d0_aktif > 0 else 0.0
 
+      # DPD 1-30
       d1_grp = group[group["Kat_Status"] == "DPD 1-30"]
       d1_aktif = len(d1_grp)
       d1_terbayar = int(d1_grp["Sudah_Bayar"].sum())
       d1_rate = round((d1_terbayar / d1_aktif * 100), 1) if d1_aktif > 0 else 0.0
 
+      # DPD 31-90
       d31_grp = group[group["Kat_Status"] == "DPD 31-90"]
       d31_aktif = len(d31_grp)
       d31_terbayar = int(d31_grp["Sudah_Bayar"].sum())
@@ -224,34 +194,24 @@ if df is not None:
           round((d31_terbayar / d31_aktif * 100), 1) if d31_aktif > 0 else 0.0
       )
 
-      d90_grp = group[group["Kat_Status"] == "DPD 90+"]
-      d90_aktif = len(d90_grp)
-      d90_terbayar = int(d90_grp["Sudah_Bayar"].sum())
-      d90_rate = (
-          round((d90_terbayar / d90_aktif * 100), 1) if d90_aktif > 0 else 0.0
-      )
-
       bp_data.append({
-          "Business Partner": bp,
+          "Nama": bp,
           "Total Aktif": tot_aktif,
           "Total Terbayar": tot_terbayar,
           "DPD 0 Aktif": d0_aktif,
           "DPD 0 Terbayar": d0_terbayar,
-          "DPD 0 Rate (%)": f"{d0_rate}%",
+          "DPD 0 Rate": f"{d0_rate}%",
           "DPD 1-30 Aktif": d1_aktif,
           "DPD 1-30 Terbayar": d1_terbayar,
-          "DPD 1-30 Rate (%)": f"{d1_rate}%",
+          "DPD 1-30 Rate": f"{d1_rate}%",
           "DPD 31-90 Aktif": d31_aktif,
           "DPD 31-90 Terbayar": d31_terbayar,
-          "DPD 31-90 Rate (%)": f"{d31_rate}%",
-          "DPD 90+ Aktif": d90_aktif,
-          "DPD 90+ Terbayar": d90_terbayar,
-          "DPD 90+ Rate (%)": f"{d90_rate}%",
+          "DPD 31-90 Rate": f"{d31_rate}%",
       })
 
-    summary_table = pd.DataFrame(bp_data)
-    st.dataframe(summary_table, use_container_width=True, hide_index=True)
+    df_table = pd.DataFrame(bp_data)
+    st.dataframe(df_table, use_container_width=True, hide_index=True)
   else:
-    st.warning("Kolom Business Partner tidak ditemukan dalam data.")
+    st.warning("Kolom nama tidak ditemukan.")
 else:
-  st.warning("File Excel belum terbaca dengan benar.")
+  st.warning("File Excel belum terbaca.")
