@@ -2,69 +2,85 @@ from datetime import datetime
 import pandas as pd
 import streamlit as st
 
-# 1. Konfigurasi Halaman & Tema Elegan ala Perusahaan Asing
+# 1. Konfigurasi Halaman & Layout Luas
 st.set_page_config(
     page_title="Amartha Area Banjar Dashboard",
     page_icon="💼",
     layout="wide",
 )
 
-# Styling CSS Tema Korporat Profesional (Clean, Modern, & Elegan)
+# 2. Styling CSS Tingkat Lanjut (Estetika Korporat Global / Premium)
 st.markdown(
     """
     <style>
+    /* Background utama bersih ala korporat modern */
     .stApp {
         background-color: #F8FAFC;
-        color: #1E293B;
+        color: #0F172A;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
+    
+    /* Header Utama */
     h1 {
         color: #0F172A;
-        font-weight: 700;
-        font-size: 2rem;
-        letter-spacing: -0.025em;
+        font-weight: 800;
+        font-size: 1.85rem;
+        letter-spacing: -0.03em;
     }
+    
     h3 {
         color: #334155;
-        font-weight: 600;
+        font-weight: 700;
+        font-size: 1.2rem;
     }
+
+    /* Styling Kartu Metrik Premium (Kotak Putih dengan Border Halus & Efek Bayangan) */
     div[data-testid="stMetric"] {
-        background-color: #FFFFFF;
+        background: #FFFFFF;
         border: 1px solid #E2E8F0;
-        padding: 16px 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        padding: 20px;
+        border-radius: 14px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
+        transition: all 0.3s ease;
+    }
+    div[data-testid="stMetric"]:hover {
+        border-color: #CBD5E1;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08);
     }
     div[data-testid="stMetric"] label {
         color: #64748B !important;
-        font-weight: 500;
-        font-size: 0.875rem;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
         color: #0F172A !important;
-        font-weight: 700;
-        font-size: 1.75rem;
+        font-weight: 800;
+        font-size: 1.9rem;
     }
+
+    /* Sidebar Kontrol */
     section[data-testid="stSidebar"] {
         background-color: #FFFFFF;
         border-right: 1px solid #E2E8F0;
     }
+    
+    /* Styling Tabel Eksekutif */
     div[data-testid="stDataFrame"] {
         background-color: #FFFFFF;
-        border-radius: 12px;
+        border-radius: 14px;
         border: 1px solid #E2E8F0;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-        padding: 8px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+        padding: 12px;
     }
     </style>
 """,
     unsafe_allow_html=True,
 )
 
-# 2. Load Data Excel (.xlsx) Terbaru Anda
-EXCEL_FILE = (
-    "Workbook1.xlsx"  # Sesuaikan jika nama file beda
-)
+# 3. Load Data Excel / CSV
+EXCEL_FILE = "Workbook1.xlsx"  # Sesuaikan dengan nama file Anda di GitHub
 
 
 @st.cache_data
@@ -75,71 +91,56 @@ def load_data(file_path):
     else:
       return pd.read_csv(file_path)
   except Exception as e:
-    st.error(f"Gagal memuat file Excel: {e}")
+    st.error(f"Gagal memuat file: {e}")
     return None
 
 
 df = load_data(EXCEL_FILE)
 
 if df is not None:
-  # Parsing tanggal pembayaran jika ada
   if "Latest Payment Date" in df.columns:
     df["Latest Payment Date Parsed"] = pd.to_datetime(
         df["Latest Payment Date"], errors="coerce"
     )
 
-  # --- MENCARI KOLOM NAMA CABANG / WILAYAH TEKS ---
-  # Mencari kolom yang mengandung kata 'branch' atau 'cabang' yang bertipe teks
+  # Deteksi Kolom Cabang
   branch_col = None
   for col in df.columns:
-    col_lower = str(col).lower()
-    if (
-        ("branch" in col_lower or "cabang" in col_lower)
-        and "id" not in col_lower
-        and df[col].dtype == "object"
-    ):
+    if "branch" in str(col).lower() or "cabang" in str(col).lower():
       branch_col = col
       break
-
-  # Jika tidak ketemu kolom teks khusus nama cabang, cari yang ada kata branch/cabang secara umum
-  if not branch_col:
-    for col in df.columns:
-      if "branch" in str(col).lower() or "cabang" in str(col).lower():
-        branch_col = col
-        break
-
-  # Fallback terakhir jika tetap tidak ketemu
   if not branch_col:
     branch_col = df.columns[3] if len(df.columns) > 3 else df.columns[0]
 
-  # --- SIDEBAR FILTER WILAYAH ---
+  # --- SIDEBAR FILTER ---
   st.sidebar.markdown(
-      "<h3 style='color: #0F172A; font-size: 1.1rem;'>⚙️ Filter Kontrol</h3>",
+      "<h3 style='color: #0F172A; font-size: 1.1rem;'>📊 Navigasi"
+      " & Filter</h3>",
       unsafe_allow_html=True,
   )
   branch_list = ["Semua Cabang"] + sorted(
       df[branch_col].dropna().astype(str).unique().tolist()
   )
-  selected_branch = st.sidebar.selectbox("Pilih Nama Cabang", branch_list)
+  selected_branch = st.sidebar.selectbox("Pilih Wilayah / Cabang", branch_list)
 
   if selected_branch != "Semua Cabang":
     df_filtered = df[df[branch_col].astype(str) == selected_branch].copy()
     title_text = f"Executive Performance: Cabang {selected_branch}"
   else:
     df_filtered = df.copy()
-    title_text = "Executive Performance: Keseluruhan Cabang"
+    title_text = "Realtime Performance: Keseluruhan Cabang"
 
   # --- HEADER UTAMA ---
   st.title(title_text)
   st.markdown(
-      "<p style='color: #64748B; font-size: 1rem; margin-top: -10px;'>Periode"
-      " Laporan: Minggu ini, 13 - 19 September 2026</p>",
+      "<p style='color: #64748B; font-size: 0.95rem; margin-top:"
+      " -8px;'>Periode Laporan: Minggu ini, 13 - 19 September 2026</p>",
       unsafe_allow_html=True,
   )
   st.markdown("<hr style='border: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
 
 
-  # --- FUNGSI KATEGORISASI STATUS & PEMBAYARAN ---
+  # --- KATEGORISASI STATUS ---
   def classify_row(row):
     s = str(row["Payment Status"]).upper()
     dt = (
@@ -175,7 +176,7 @@ if df is not None:
   df_filtered["Kat_Status"] = [r[0] for r in res]
   df_filtered["Sudah_Bayar"] = [r[1] for r in res]
 
-  # --- 4 KARTU METRIK UTAMA ---
+  # --- 4 KARTU METRIK UTAMA (Dibuat Seimbang) ---
   tot_lancar_card = len(df_filtered[df_filtered["Kat_Status"] == "DPD 0"])
   tot_dpd1_card = len(df_filtered[df_filtered["Kat_Status"] == "DPD 1-30"])
   tot_dpd31_card = len(df_filtered[df_filtered["Kat_Status"] == "DPD 31-90"])
@@ -194,7 +195,7 @@ if df is not None:
   st.markdown("<br>", unsafe_allow_html=True)
   st.subheader("Business Partner (BP) Performance Breakdown")
 
-  # --- TABEL PERFORMA BUSINESS PARTNER (BP) ---
+  # --- TABEL DETAIL BP ---
   bp_candidates = [
       col for col in df_filtered.columns if "bp" in col.lower() or "nama" in col.lower()
   ]
@@ -206,19 +207,16 @@ if df is not None:
       tot_aktif = len(group)
       tot_terbayar = int(group["Sudah_Bayar"].sum())
 
-      # DPD 0
       d0_grp = group[group["Kat_Status"] == "DPD 0"]
       d0_aktif = len(d0_grp)
       d0_terbayar = int(d0_grp["Sudah_Bayar"].sum())
       d0_rate = round((d0_terbayar / d0_aktif * 100), 1) if d0_aktif > 0 else 0.0
 
-      # DPD 1-30
       d1_grp = group[group["Kat_Status"] == "DPD 1-30"]
       d1_aktif = len(d1_grp)
       d1_terbayar = int(d1_grp["Sudah_Bayar"].sum())
       d1_rate = round((d1_terbayar / d1_aktif * 100), 1) if d1_aktif > 0 else 0.0
 
-      # DPD 31-90
       d31_grp = group[group["Kat_Status"] == "DPD 31-90"]
       d31_aktif = len(d31_grp)
       d31_terbayar = int(d31_grp["Sudah_Bayar"].sum())
@@ -226,7 +224,6 @@ if df is not None:
           round((d31_terbayar / d31_aktif * 100), 1) if d31_aktif > 0 else 0.0
       )
 
-      # DPD 90+
       d90_grp = group[group["Kat_Status"] == "DPD 90+"]
       d90_aktif = len(d90_grp)
       d90_terbayar = int(d90_grp["Sudah_Bayar"].sum())
@@ -257,7 +254,4 @@ if df is not None:
   else:
     st.warning("Kolom Business Partner tidak ditemukan dalam data.")
 else:
-  st.warning(
-      "Silakan pastikan file Excel .xlsx terbaru Anda sudah di-upload dan"
-      " namanya sesuai dengan variabel EXCEL_FILE."
-  )
+  st.warning("File Excel belum terbaca dengan benar.")
